@@ -76,10 +76,11 @@ jobs:
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force package | Out-Null
           Copy-Item 'build\bin\Release\*' package\ -Recurse
-          foreach ($pattern in @('cudart64_*.dll','cublas64_*.dll','cublasLt64_*.dll')) {
-            $found = Get-ChildItem "$env:CUDA_PATH\bin" -Filter $pattern -File
-            if (!$found) { throw "Missing CUDA runtime: $pattern" }
-            $found | Copy-Item -Destination package\
+          # CUDA runtime DLLs are already installed on the user's PC from the
+          # separately verified official cudart archive; package the patched
+          # PrismML binaries only, without guessing the runner's CUDA layout.
+          if (-not (Test-Path 'package\llama-server.exe')) {
+            throw 'Compiled llama-server.exe was not found'
           }
           Get-ChildItem package -File | Get-FileHash -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash)  $([IO.Path]::GetFileName($_.Path))" } |
